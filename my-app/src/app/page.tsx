@@ -21,6 +21,7 @@ export default function Home() {
 
     if (remainingTime <= 0 && interval.current) {
       clearInterval(interval.current);
+      interval.current = null;
       setIsPaused(true);
     }
   }, [remainingTime]);
@@ -36,7 +37,9 @@ export default function Home() {
   const handleStartClick = () => {
     if (interval.current == null) {
       setIsPaused(false);
-      setRemainingTime((prev) => prev - 1);
+
+      setRemainingTime((prev) => (remainingTime > 0 ? prev - 1 : totalTime));
+
       interval.current = setInterval(() => {
         setRemainingTime((prev) => prev - 1);
       }, 1000);
