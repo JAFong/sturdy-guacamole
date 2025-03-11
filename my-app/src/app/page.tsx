@@ -18,6 +18,11 @@ export default function Home() {
 
   useEffect(() => {
     setInputVal(formatTime(remainingTime));
+
+    if (remainingTime <= 0 && interval.current) {
+      clearInterval(interval.current);
+      setIsPaused(true);
+    }
   }, [remainingTime]);
 
   const pauseTimer = () => {
