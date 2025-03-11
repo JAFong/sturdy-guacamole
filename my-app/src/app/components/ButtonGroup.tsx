@@ -44,7 +44,7 @@ const ButtonGroup = ({
         }}
         onClick={() => onStartClick()}
       >
-        {isPaused ? <>&#x23F8;</> : <>&#x23F5;</>}
+        {!isPaused ? <>&#x23F8;</> : <>&#x23F5;</>}
       </button>
       <button
         style={{

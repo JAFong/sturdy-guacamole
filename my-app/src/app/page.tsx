@@ -13,11 +13,20 @@ export default function Home() {
   const [remainingTime, setRemainingTime] = useState(DEFAULT_TIME); // Time in seconds
   const [isPaused, setIsPaused] = useState(true);
   const [inputVal, setInputVal] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
   const interval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setInputVal(formatTime(remainingTime));
   }, [remainingTime]);
+
+  const pauseTimer = () => {
+    if (interval.current) {
+      clearInterval(interval.current);
+      interval.current = null;
+      setIsPaused(true);
+    }
+  };
 
   const handleStartClick = () => {
     if (interval.current == null) {
@@ -29,9 +38,7 @@ export default function Home() {
       return;
     }
 
-    setIsPaused(true);
-    clearInterval(interval.current);
-    interval.current = null;
+    pauseTimer();
   };
 
   const handleMinuteClick = () => {
@@ -47,16 +54,6 @@ export default function Home() {
     if (interval.current) {
       clearInterval(interval.current);
       interval.current = null;
-    }
-  };
-
-  const handleInputFocus = () => {
-    setIsPaused(true);
-
-    if (interval.current) {
-      clearInterval(interval.current);
-      interval.current = null;
-      setIsPaused(true);
     }
   };
 
@@ -82,7 +79,8 @@ export default function Home() {
   };
 
   const handleSliderChange = (percentage: number) => {
-    if (!percentage) return;
+    if (!percentage || !isDragging) return;
+    pauseTimer();
     setRemainingTime(Math.round(totalTime * (percentage / 100)));
   };
 
@@ -112,6 +110,7 @@ export default function Home() {
           progressColorTo="#ffffff"
           knobColor="#ffffff"
           trackColor="#253238"
+          isDragging={(value) => setIsDragging(value)}
           onChange={(value) => handleSliderChange(value)}
           renderLabelValue={
             <input
@@ -128,7 +127,7 @@ export default function Home() {
                 zIndex: "100",
               }}
               value={inputVal}
-              onFocus={() => handleInputFocus()}
+              onFocus={() => pauseTimer()}
               onBlur={() => handleInputBlur()}
               onChange={(e) => handleInputChange(e.target.value)}
             />
