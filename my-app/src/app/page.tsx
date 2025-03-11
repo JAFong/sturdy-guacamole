@@ -1,30 +1,27 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import CircularSlider from "@fseehawer/react-circular-slider";
-
-const formatTime = (timeInSeconds: number) => {
-  const minutes = Math.floor(timeInSeconds / 60);
-  const seconds = timeInSeconds - minutes * 60;
-
-  const minuteStr = minutes < 10 ? `0${minutes}` : minutes;
-
-  return `${minuteStr}:${seconds < 10 ? `0${seconds}` : seconds}`;
-};
-
-const timeToPercentage = (remainingTime: number, totalTime: number) => {
-  return (remainingTime / totalTime) * 100;
-};
+import ButtonGroup from "./components/ButtonGroup";
+import formatTime from "./utils/formatTime";
+import timeToPercentage from "./utils/timeToPercentage";
 
 const DEFAULT_TIME = 60;
 
 export default function Home() {
   const [totalTime, setTotalTime] = useState(DEFAULT_TIME);
   const [remainingTime, setRemainingTime] = useState(DEFAULT_TIME); // Time in seconds
+  const [isPaused, setIsPaused] = useState(true);
+  const [inputVal, setInputVal] = useState("");
   const interval = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setInputVal(formatTime(remainingTime));
+  }, [remainingTime]);
 
   const handleStartClick = () => {
     if (interval.current == null) {
+      setIsPaused(false);
       setRemainingTime((prev) => prev - 1);
       interval.current = setInterval(() => {
         setRemainingTime((prev) => prev - 1);
@@ -32,6 +29,7 @@ export default function Home() {
       return;
     }
 
+    setIsPaused(true);
     clearInterval(interval.current);
     interval.current = null;
   };
@@ -43,6 +41,8 @@ export default function Home() {
 
   const handleResetClick = () => {
     setRemainingTime(DEFAULT_TIME);
+    setTotalTime(DEFAULT_TIME);
+    setIsPaused(true);
 
     if (interval.current) {
       clearInterval(interval.current);
@@ -50,8 +50,40 @@ export default function Home() {
     }
   };
 
+  const handleInputFocus = () => {
+    setIsPaused(true);
+
+    if (interval.current) {
+      clearInterval(interval.current);
+      interval.current = null;
+      setIsPaused(true);
+    }
+  };
+
+  const handleInputBlur = () => {
+    const [minutes, seconds] = inputVal.split(":").map(Number);
+
+    if (isNaN(minutes) || isNaN(seconds)) {
+      throw new Error("Invalid time format. Expected MM:SS.");
+    }
+
+    const minutesInSeconds = minutes * 60;
+    const newTime = minutesInSeconds + seconds;
+
+    setRemainingTime(newTime);
+
+    if (newTime > totalTime) {
+      setTotalTime(newTime);
+    }
+  };
+
   const handleInputChange = (formattedTime: string) => {
-    // Convert formatted time into time
+    setInputVal(formattedTime);
+  };
+
+  const handleSliderChange = (percentage: number) => {
+    if (!percentage) return;
+    setRemainingTime(Math.round(totalTime * (percentage / 100)));
   };
 
   return (
@@ -66,24 +98,21 @@ export default function Home() {
       <div
         style={{
           margin: "0 auto",
-          width: "150px",
+          width: "200px",
         }}
       >
-        <div>{formatTime(remainingTime)}</div>
         <CircularSlider
           dataIndex={timeToPercentage(remainingTime, totalTime)}
           min={0}
           max={100}
-          width={150}
+          width={200}
           trackSize={10}
           progressSize={10}
           progressColorFrom="#ffffff"
           progressColorTo="#ffffff"
           knobColor="#ffffff"
           trackColor="#253238"
-          onChange={(value) => {
-            console.log(value);
-          }}
+          onChange={(value) => handleSliderChange(value)}
           renderLabelValue={
             <input
               style={{
@@ -98,22 +127,19 @@ export default function Home() {
                 width: "60px",
                 zIndex: "100",
               }}
-              value={formatTime(remainingTime)}
+              value={inputVal}
+              onFocus={() => handleInputFocus()}
+              onBlur={() => handleInputBlur()}
               onChange={(e) => handleInputChange(e.target.value)}
             />
           }
         />
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            width: "100%",
-          }}
-        >
-          <button onClick={() => handleMinuteClick()}>Add 1 minute</button>
-          <button onClick={() => handleStartClick()}>Pause/Play</button>
-          <button onClick={() => handleResetClick()}>Reset</button>
-        </div>
+        <ButtonGroup
+          isPaused={isPaused}
+          onMinuteClick={handleMinuteClick}
+          onStartClick={handleStartClick}
+          onResetClick={handleResetClick}
+        />
       </div>
     </div>
   );
